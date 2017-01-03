@@ -234,9 +234,9 @@ def _setup_public_ips(ocb, instance_bouncer):
     ocb.fcu.create_tags([instance_bouncer.id], {'osc.fcu.eip.auto-attach': public_ip.public_ip})
     ocb.log('Boucner Instance {0} has got IP {1}'.format(instance_bouncer.id, public_ip.public_ip), level='info')
 
-def setup_vpc(omi_id, key_name, vpc_cidr='10.0.0.0/16', subnet_public_cidr='10.0.1.0/24', subnet_private_cidr='10.0.2.0/24', instance_type='t2.medium', tag_prefix=''):
+def setup_vpc(vpc_cidr='10.0.0.0/16', subnet_public_cidr='10.0.1.0/24', subnet_private_cidr='10.0.2.0/24', tag_prefix='', key_name=None, omi_id=None, instance_type='c4.large'):
     """
-    Create a VPC with 2 subnets and a nat instance
+    Create a VPC with 2 subnets and a nat gateway. Instance are created in keyname and omid_id are given
       - First subnet is public
         - Instance to Bounce
      - Second subnet is private
@@ -259,9 +259,12 @@ def setup_vpc(omi_id, key_name, vpc_cidr='10.0.0.0/16', subnet_public_cidr='10.0
     vpc, subnet_public, subnet_private = _create_network(ocb, vpc_cidr, subnet_public_cidr, subnet_private_cidr, tag_prefix)
     gw = _create_gateway(ocb, vpc)
     sg_public, sg_private = _create_security_groups(ocb, vpc, tag_prefix)
-    instance_bouncer, instance_private = _run_instances(ocb, omi_id, subnet_public, subnet_private, sg_public, sg_private, key_name, instance_type, tag_prefix)
+
     natgw_id = _create_natgateway(ocb, subnet_public)
     _configure_network_flows(ocb, vpc, subnet_public, subnet_private, gw, natgw_id, tag_prefix)
+    if not key_name or not omi_id:
+        return vpc, subnet_public, subnet_private
+    instance_bouncer, instance_private = _run_instances(ocb, omi_id, subnet_public, subnet_private, sg_public, sg_private, key_name, instance_type, tag_prefix)
     _setup_public_ips(ocb, instance_bouncer)
     instance_bouncer.update()
     instance_private.update()
