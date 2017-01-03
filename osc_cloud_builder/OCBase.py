@@ -125,7 +125,7 @@ class OCBase(object):
 
         access_key_id = os.environ.get('AWS_ACCESS_KEY_ID', None)
         secret_access_key = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
-        if not access_key_id or secret_access_key:
+        if not access_key_id or not secret_access_key:
             try:
                 access_key_id = settings.get(self.region, 'access_key_id', None)
                 secret_access_key = settings.get(self.region, 'secret_access_key', None)
