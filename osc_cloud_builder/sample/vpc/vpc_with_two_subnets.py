@@ -128,7 +128,7 @@ def _create_security_groups(ocb, vpc, tag_prefix):
     sg_public.authorize('tcp', 0, 65535, src_group=sg_private)
     sg_public.authorize('udp', 0, 65535, src_group=sg_private)
     sg_public.authorize('icmp', -1, -1, src_group=sg_private)
-    #
+    # TODO Etre plus logique dans les flux et le documenter
     sg_private.authorize('tcp', 22, 22, src_group=sg_public)
     return sg_public, sg_private
 
@@ -210,10 +210,10 @@ def _configure_network_flows(ocb, vpc, subnet_public, subnet_private, gw, natgw_
     main_rt = ocb.fcu.get_all_route_tables(filters={'vpc-id': vpc.id, 'association.main': 'true'})[0]
     if natgw_id:
         ocb.fcu.create_route(main_rt.id, '0.0.0.0/0', natgw_id)
-    ocb.fcu.create_tags([main_rt.id], {'Name': 'main-'.format(tag_prefix)})
+    ocb.fcu.create_tags([main_rt.id], {'Name': 'local-'.format(tag_prefix)})
     #
     rt = ocb.fcu.create_route_table(vpc.id)
-    ocb.fcu.create_tags([rt.id], {'Name': 'second-'.format(tag_prefix)})
+    ocb.fcu.create_tags([rt.id], {'Name': 'public-'.format(tag_prefix)})
     time.sleep(SLEEP_SHORT)
     ocb.log('Creating Route Table {0}'.format(rt.id), level='info')
     ocb.fcu.associate_route_table(rt.id, subnet_public.id)
@@ -258,12 +258,11 @@ def setup_vpc(vpc_cidr='10.0.0.0/16', subnet_public_cidr='10.0.1.0/24', subnet_p
     ocb = OCBase()
     vpc, subnet_public, subnet_private = _create_network(ocb, vpc_cidr, subnet_public_cidr, subnet_private_cidr, tag_prefix)
     gw = _create_gateway(ocb, vpc)
-    sg_public, sg_private = _create_security_groups(ocb, vpc, tag_prefix)
-
+    sg_public, sg_private = _create_security_groups(ocb, vpc, tag_prefix) #TODO FAut les rendres pour only network
     natgw_id = _create_natgateway(ocb, subnet_public)
     _configure_network_flows(ocb, vpc, subnet_public, subnet_private, gw, natgw_id, tag_prefix)
     if not key_name or not omi_id:
-        return vpc, subnet_public, subnet_private
+        return vpc, subnet_public, subnet_private                       #TODO Fera l'objet d'une deuxieme fonction
     instance_bouncer, instance_private = _run_instances(ocb, omi_id, subnet_public, subnet_private, sg_public, sg_private, key_name, instance_type, tag_prefix)
     _setup_public_ips(ocb, instance_bouncer)
     instance_bouncer.update()
