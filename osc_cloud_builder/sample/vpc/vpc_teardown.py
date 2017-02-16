@@ -51,7 +51,7 @@ def teardown(vpc_to_delete, terminate_instances=False):
     if terminate_instances is False and \
        ocb.fcu.get_only_instances(filters={'vpc-id': vpc_to_delete, 'instance-state-name': 'running'}) and \
        ocb.fcu.get_only_instances(filters={'vpc-id': vpc_to_delete, 'instance-state-name': 'stopped'}) :
-        ocb.log('Instances are still exists in {0}, teardown will not be executed'.format(vpc_to_delete) ,'error')
+        ocb.log('Instances still exist in {0}, teardown will not be executed. Add terminate_instances=True to teardown() method.'.format(vpc_to_delete) ,'error')
         return
 
     ocb.log('Deleting VPC {0}'.format(vpc_to_delete), 'info', __file__)
