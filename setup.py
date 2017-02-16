@@ -50,7 +50,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.0.15',
+    version='0.0.16',
 
     description='OCB is a set of boto connectors, generic tools and\
     samples scripts to be used to ease the build of platforms.',
@@ -103,7 +103,7 @@ setup(
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
-        'boto==2.42.0',
+        'boto==2.45.0',
         'lxml==3.6.4',
     ],
 )
