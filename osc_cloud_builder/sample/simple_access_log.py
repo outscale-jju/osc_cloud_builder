@@ -26,9 +26,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 """
-Creates an instance with an ephemeral disk.
-See https://wiki.outscale.net/display/DOCU/Ephemeral+Storage
-See https://wiki.outscale.net/display/DOCU/Instance+Types
+Creates a VPC with an internet facing LBU.
+This LBU write it's log to OSU with AccessLog mechanism.
+
 """
 
 __author__      = "Heckle"
@@ -41,6 +41,9 @@ from osc_cloud_builder.OCBase import OCBase
 from osc_cloud_builder.sample.vpc.vpc_with_two_subnets import setup_vpc
 from osc_cloud_builder.tools.wait_for import wait_state
 from boto.ec2.elb.attributes import AccessLogAttribute
+
+S3_BUCKET_NAME = 'sample'
+S3_BUCKET_PREFIX = 'simple-access-log'
 
 
 def prepare_infra(listeners=[(80, 80, 'TCP')], tag_prefix='', key_name=None, omi_id=None, instance_type='c4.large'):
@@ -89,7 +92,7 @@ def setup_access_log(listeners=[(80, 80, 'TCP')], tag_prefix='', key_name=None, 
     lb = ocb.lbu.get_all_load_balancers()[0]
     log_config = AccessLogAttribute()
     log_config.enabled = True
-    log_config.s3_bucket_name = 'sample'
-    log_config.s3_bucket_prefix = 'simple-access-log'
+    log_config.s3_bucket_name = S3_BUCKET_NAME
+    log_config.s3_bucket_prefix = S3_BUCKET_PREFIX
     log_config.emit_interval = 5
     ocb.lbu.modify_lb_attribute(lb.name, 'accessLog', log_config)
