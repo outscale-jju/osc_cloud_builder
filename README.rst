@@ -25,12 +25,18 @@ Security informations
     - export AWS_ACCESS_KEY_ID=XXXX424242XXXX
     - export AWS_SECRET_ACCESS_KEY=YYYYY4242YYYYY
 
+If you want to connect to ICU for special API call such as ResetAccountPassword  (see http://docs.outscale.com/api_icu/operations/Action_ResetAccountPassword_post.html#_api_icu-action_resetaccountpassword_post) you must setup both login and password
+    - export ICU_LOGIN=ZZZZ424242ZZZZ
+    - export ICU_PASSWORD=AAAAA4242AAAAA
+
+
 Setup the region
 ------------------
     - export FCU_ENDPOINT=fcu.<REGION_NAME>.outscale.com
     - export LBU_ENDPOINT=lbu.<REGION_NAME>.outscale.com
     - export EIM_ENDPOINT=eim.<REGION_NAME>.outscale.com
     - export OSU_ENDPOINT=osu.<REGION_NAME>.outscale.com
+    - export ICU_ENDPOINT=icu.<REGION_NAME>.outscale.com
 
 
 How to use it
@@ -64,6 +70,7 @@ Quick start:
    >>>print ocb.fcu.get_only_instances()
    >>>print ocb.eim.get_user()
    >>>print ocb.lbu.get_all_load_balancers()
+   >>>print ocb.icu.get_catalog()
 
 *******
 Helpers

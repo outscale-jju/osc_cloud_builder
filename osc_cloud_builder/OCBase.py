@@ -38,11 +38,15 @@ import boto
 import ConfigParser
 import os.path
 import os
+import urlparse
 import boto.s3.connection
-from boto.vpc import VPCConnection
 from boto.ec2.regioninfo import EC2RegionInfo
+from boto.ec2.regioninfo import RegionInfo
 from boto.iam.connection import IAMConnection
 from boto.ec2.elb import ELBConnection
+
+from osc_cloud_builder.vendor.outscale.icu import ICUConnection
+from osc_cloud_builder.vendor.outscale.fcu import FCUConnection
 
 
 SLEEP_SHORT = 5
@@ -106,10 +110,11 @@ class OCBase(object):
         """
         Load Cloud configuration from services.ini OR environment
         """
-        fcu_endpoint = None
-        lbu_endpoint = None
-        eim_endpoint = None
-        osu_endpoint = None
+        endpoints = {}
+        endpoints['fcu'] = None
+        endpoints['lbu'] = None
+        endpoints['eim'] = None
+        endpoints['osu'] = None
         settings = ConfigParser.ConfigParser()
         settings_path = None
 
@@ -133,35 +138,76 @@ class OCBase(object):
                 self.__logger.critical('You must setup both AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variable or in your settings.ini file')
                 raise OCBError('Bad credential (access_key_id, secret_access_key) setup')
 
-        fcu_endpoint = os.environ.get('FCU_ENDPOINT', None)
-        if not fcu_endpoint:
+        endpoints['fcu'] = os.environ.get('FCU_ENDPOINT', None)
+        if not endpoints['fcu']:
             try:
-                fcu_endpoint = settings.get(self.region, 'fcu_endpoint')
+                endpoints['fcu'] = settings.get(self.region, 'fcu_endpoint')
             except ConfigParser.Error:
                 self.log('No fcu_endpoint set', 'warning')
 
-        lbu_endpoint = os.environ.get('LBU_ENDPOINT', None)
-        if not lbu_endpoint:
+        endpoints['lbu'] = os.environ.get('LBU_ENDPOINT', None)
+        if not endpoints['lbu']:
             try:
-                lbu_endpoint = settings.get(self.region, 'lbu_endpoint')
+                endpoints['lbu'] = settings.get(self.region, 'lbu_endpoint')
             except ConfigParser.Error:
                 self.log('No lbu_endpoint set', 'warning')
 
-        eim_endpoint = os.environ.get('EIM_ENDPOINT', None)
-        if not eim_endpoint:
+        endpoints['eim'] = os.environ.get('EIM_ENDPOINT', None)
+        if not endpoints['eim']:
             try:
-                eim_endpoint = settings.get(self.region, 'eim_endpoint')
+                endpoints['eim'] = settings.get(self.region, 'eim_endpoint')
             except ConfigParser.Error:
                 self.log('No eim_endpoint set', 'warning')
 
-        osu_endpoint = os.environ.get('OSU_ENDPOINT', None)
-        if not osu_endpoint:
+        endpoints['osu'] = os.environ.get('OSU_ENDPOINT', None)
+        if not endpoints['osu']:
             try:
-                osu_endpoint = settings.get(self.region, 'osu_endpoint')
+                endpoints['osu'] = settings.get(self.region, 'osu_endpoint')
             except ConfigParser.Error:
                 self.log('No osu_endpoint set', 'warning')
 
-        return access_key_id, secret_access_key, fcu_endpoint, lbu_endpoint, eim_endpoint, osu_endpoint
+        icu = {}
+        icu['endpoint'] = os.environ.get('ICU_ENDPOINT', None)
+        icu['login'] = os.environ.get('ICU_LOGIN', '')
+        icu['password'] = os.environ.get('ICU_PASSWORD', '')
+        if not icu['endpoint']:
+            try:
+                icu['endpoint'] = settings.get(self.region, 'icu_endpoint')
+                icu['login'] = settings.get(self.region, 'icu_login')
+                icu['endpoint'] = settings.get(self.region, 'icu_password')
+            except ConfigParser.Error:
+                self.log('No icu_endpoint set', 'warning')
+
+        return access_key_id, secret_access_key, endpoints, icu
+
+    def __connect_icu(self, url, aws_access_key_id='', aws_secret_access_key='', login='', password='', **kwargs):
+        """
+        Connect to an ICU Api endpoint.
+        Additional arguments are passed to ICUConnection.
+
+        :param str url: Url for the icu api endpoint to connect to
+        :param str aws_access_key_id: Your AWS Access Key ID
+        :param str aws_secret_access_key: Your AWS Secret Access Key
+        :param str login: Your login email ID
+        :param str password: Your raw password to login
+        :param dict kwargs:
+        :return class: `outscale.boto.icu.ICUConnection`
+        """
+        if not url.startswith('https://'):
+            url = 'https://{0}'.format(url)
+        purl = urlparse.urlparse(url)
+        kwargs['port'] = purl.port
+        kwargs['path'] = purl.path
+        if not 'is_secure' in kwargs:
+            kwargs['is_secure'] = (purl.scheme == "https")
+
+        kwargs['host'] = RegionInfo(name=purl.hostname, endpoint=purl.hostname).endpoint
+        kwargs['aws_access_key_id'] = aws_access_key_id
+        kwargs['aws_secret_access_key'] = aws_secret_access_key
+        kwargs['login'] = login
+        kwargs['password'] = password
+
+        return ICUConnection(**kwargs)
 
 
     def __connections_setup(self, is_secure, boto_debug):
@@ -174,35 +220,40 @@ class OCBase(object):
         :raises OCBError: When connections can not be created because AK and SK are not set up in environment variable
         """
 
-        access_key_id, secret_access_key, fcu_endpoint, lbu_endpoint, eim_endpoint, osu_endpoint = self.__load_config()
+        access_key_id, secret_access_key, endpoints, icu_conn = self.__load_config()
 
-        if fcu_endpoint:
-            fcu_endpoint = EC2RegionInfo(endpoint=fcu_endpoint)
-            self.fcu = VPCConnection(access_key_id, secret_access_key, region=fcu_endpoint, is_secure=is_secure, debug=boto_debug)
+        if endpoints['fcu']:
+            fcu_endpoint = EC2RegionInfo(endpoint=endpoints['fcu'])
+            self.fcu = FCUConnection(access_key_id, secret_access_key, region=fcu_endpoint, is_secure=is_secure, debug=boto_debug)
         else:
             self.__logger.info('No FCU connection configured')
             self.fcu = None
 
-        if lbu_endpoint:
-            lbu_endpoint = EC2RegionInfo(endpoint=lbu_endpoint)
+        if endpoints['lbu']:
+            lbu_endpoint = EC2RegionInfo(endpoint=endpoints['lbu'])
             self.lbu = ELBConnection(access_key_id, secret_access_key, region=lbu_endpoint, debug=boto_debug)
         else:
             self.__logger.info('No LBU connection configured')
             self.lbu = None
 
-        if eim_endpoint:
-            self.eim = IAMConnection(access_key_id, secret_access_key, host=eim_endpoint, debug=boto_debug)
+        if endpoints['eim']:
+            self.eim = IAMConnection(access_key_id, secret_access_key, host=endpoints['eim'], debug=boto_debug)
         else:
             self.__logger.info('No EIM connection configured')
             self.eim = None
 
-        if osu_endpoint:
-            self.osu = boto.connect_s3(access_key_id, secret_access_key, host=osu_endpoint,
+        if endpoints['osu']:
+            self.osu = boto.connect_s3(access_key_id, secret_access_key, host=endpoints['osu'],
                                        calling_format=boto.s3.connection.ProtocolIndependentOrdinaryCallingFormat())
         else:
             self.__logger.info('No OSU connection configured')
             self.osu = None
 
+        if icu_conn['endpoint']:
+            self.icu = self.__connect_icu(icu_conn['endpoint'], access_key_id, secret_access_key, icu_conn['login'], icu_conn['password'])
+        else:
+            self.__logger.info('No ICU connection configured')
+            self.icu = None
 
 
     def log(self, message, level='debug', module_name=''):
