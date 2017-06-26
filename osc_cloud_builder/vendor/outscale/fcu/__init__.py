@@ -13,7 +13,7 @@ from osc_cloud_builder.vendor.outscale.fcu.snapshot_export_task import SnapshotE
 from osc_cloud_builder.vendor.outscale.fcu.product_type import ProductType
 from osc_cloud_builder.vendor.outscale.fcu.instance_type import InstanceType
 from osc_cloud_builder.vendor.outscale.fcu.quota import ReferenceQuota
-
+from osc_cloud_builder.vendor.outscale.fcu.image_export_task import ImageExportTask
 
 @contextlib.contextmanager
 def patch(obj, attribute, decorator):
@@ -242,3 +242,31 @@ class FCUConnection(VPCConnection):
                 params['FwLog.RateLimit'] = fwlog['rate_limit'] or ''
 
         return self.get_object('UpdateVnOptions', params, VnOptions)
+
+    @fcuext
+    def export_image(self, image_id, bucket, disk_image_format='qcow2', ak=None, sk=None, prefix=None, dry_run=False):
+        """
+        Export an image to an OSU(S3) bucket.
+
+        :param str image_id: The image to export.
+        :param str bucket: The bucket to export to, bucket must exist
+        :param str disk_image_format: The export format: vmdk vdi qcow2
+        :param str ak: The access key used to create the bucket.
+        :param str sk: The secret key used to create the bucket.
+        :param str prefix: Prefix of the destination key in the bucket,
+                       image will be written to prefix + image_export_task_id
+        """
+        params = {
+            'ImageId': image_id,
+            'ExportToOsu.OsuBucket': bucket,
+            'ExportToOsu.DiskImageFormat': disk_image_format,
+        }
+
+        if prefix is not None:
+            params['ExportToOsu.OsuPrefix'] = prefix
+        if ak and sk:
+            params['ExportToOsu.OsuAkSk.AccessKey'] = ak
+            params['ExportToOsu.OsuAkSk.SecretKey'] = sk
+        if dry_run:
+            params['DryRun'] = 'true'
+        return self.get_object('CreateImageExportTask', params, ImageExportTask)
