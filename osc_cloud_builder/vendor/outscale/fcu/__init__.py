@@ -75,7 +75,7 @@ def connect_fcu_endpoint(url, aws_access_key_id, aws_secret_access_key, **kwargs
 
 class FCUConnection(VPCConnection):
 
-    FCUExtAPIVersion = boto.config.get('Boto', 'fcuext_version', '2017-02-01')
+    FCUExtAPIVersion = boto.config.get('Boto', 'fcuext_version', '2017-06-01')
 
     @fcuext
     def export_snapshot(self, snapshot_id, bucket, disk_image_format, ak=None, sk=None, prefix=None, dry_run=False):
