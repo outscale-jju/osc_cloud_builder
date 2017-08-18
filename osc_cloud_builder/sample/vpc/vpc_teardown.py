@@ -91,6 +91,15 @@ def teardown(vpc_to_delete, terminate_instances=False):
     for peer in ocb.fcu.get_all_vpc_peering_connections(filters={'requester-vpc-info.vpc-id': vpc_to_delete}):
         peer.delete()
 
+    # Delete VPC Endpoints - Not able to manage multiple vpce
+    try:
+        vpc_endpoint = ocb.fcu.get_object('DescribeVpcEndpoints', {'Filter.0.Name': 'vpc-id', 'Filter.0.Value': vpc_to_delete,
+                                                                   'Filter.1.Name': 'vpc-endpoint-state', 'Filter.1.Value': 'available'}, EC2Object)
+        ocb.fcu.make_request('DeleteVpcEndpoints', {'VpcEndpointId.0': vpc_endpoint.vpcEndpointId}).read()
+    except Exception as err:
+        ocb.log('Can not delete Vpc Endpoints', 'warning')
+
+
     # Release EIPs
     for instance in vpc_instances:
         addresses = ocb.fcu.get_all_addresses(filters={'instance-id': instance.id})
@@ -137,7 +146,10 @@ def teardown(vpc_to_delete, terminate_instances=False):
     for rt in ocb.fcu.get_all_route_tables(filters={'vpc-id': vpc_to_delete}):
         for route in rt.routes:
             if route.gateway_id != 'local':
-                ocb.fcu.delete_route(rt.id, route.destination_cidr_block)
+                try:
+                    ocb.fcu.delete_route(rt.id, route.destination_cidr_block)
+                except Exception as err:
+                    ocb.log('Can not delete route {0} because {1}'.format(route.destination_cidr_block, err), 'warning')
 
 
     # Delete Load Balancers
@@ -148,11 +160,12 @@ def teardown(vpc_to_delete, terminate_instances=False):
             time.sleep(SLEEP_SHORT)
 
         # Wait for load balancers to disapear
-        for i in range(1, 42):          # 42 ? Because F...
+        for i in range(1, 420):          # 42 ? Because F...
             lbs = [lb for lb in ocb.lbu.get_all_load_balancers() if set(lb.subnets).intersection(subnets)]
             if not lbs:
                 break
             time.sleep(SLEEP_SHORT)
+            ocb.log('Waiting for LBU {0} to be removed'.format(lbs), 'info')
 
     for vpc in ocb.fcu.get_all_vpcs([vpc_to_delete]):
         # Delete route tables
