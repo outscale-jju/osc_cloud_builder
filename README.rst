@@ -77,3 +77,10 @@ Helpers
 *******
 
 OCB provides you modules under *sample* and *tools* to help you doing basic things.
+
+
+***********
+Disclaimer
+***********
+
+This software is provided not guarantee by Outscale.
