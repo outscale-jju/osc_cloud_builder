@@ -56,5 +56,5 @@ def create_key_pair(key_pair_name=None, key_directory='/tmp/keytest.rsa.d/'):
     return {
         "name": key_pair_name,
         "directory": key_directory,
-        "path": ''.join([key_directory, key_pair_name, '.pem'])
+        "path": ''.join([key_directory, key_pair_name, '.rsa'])
     }
