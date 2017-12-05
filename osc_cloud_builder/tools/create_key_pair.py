@@ -46,6 +46,8 @@ def create_key_pair(key_pair_name=None, key_directory='/tmp/keytest.rsa.d/'):
     :rtype: dict
     """
     ocb = OCBase()
+    if key_directory[-1] != '/':
+        key_directory = '{0}/'.format(key_directory)
     if not os.path.isdir(key_directory):
         os.makedirs(key_directory)
     if not key_pair_name:
@@ -56,5 +58,5 @@ def create_key_pair(key_pair_name=None, key_directory='/tmp/keytest.rsa.d/'):
     return {
         "name": key_pair_name,
         "directory": key_directory,
-        "path": ''.join([key_directory, key_pair_name, '.rsa'])
+        "path": ''.join([key_directory, key_pair_name, '.pem'])
     }
