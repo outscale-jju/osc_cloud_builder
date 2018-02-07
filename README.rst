@@ -22,16 +22,19 @@ There are 2 ways to configure OCB: environment variables or configuration file
 
 Environment variables
 ---------------------
-Setup of the following variables:
+Setup following variables:
 
     - export AWS_ACCESS_KEY_ID=XXXX424242XXXX
     - export AWS_SECRET_ACCESS_KEY=YYYYY4242YYYYY
 
+
 If you want to connect to ICU for special API call such as ResetAccountPassword  (see http://docs.outscale.com/api_icu/operations/Action_ResetAccountPassword_post.html#_api_icu-action_resetaccountpassword_post) you must setup both login and password
+
     - export ICU_LOGIN=ZZZZ424242ZZZZ
     - export ICU_PASSWORD=AAAAA4242AAAAA
 
 Then configure the endpoints
+
     - export FCU_ENDPOINT=fcu.<REGION_NAME>.outscale.com
     - export LBU_ENDPOINT=lbu.<REGION_NAME>.outscale.com
     - export EIM_ENDPOINT=eim.<REGION_NAME>.outscale.com
@@ -98,7 +101,9 @@ Quick start:
 
 Quick start with multiple accounts:
 -------------------------------------
+
 ::
+
 	 >>>ocb = OCBase.OCBase('first_account', ['/home/centos/my_accounts.ini'])
 	 >>>print ocb.fcu.get_only_instances()
 	 >>>ocb.reload('second_account')
