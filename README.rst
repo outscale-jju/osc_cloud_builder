@@ -16,11 +16,13 @@ Setup
 
 Cloud account setup
 =====================
-First of all, in order to run scripts you have to setup your Cloud account via environment variables.
-Setup of the following variables:
+There are 2 ways to configure OCB: environment variables or configuration file
 
-Security informations
------------------------
+
+
+Environment variables
+---------------------
+Setup of the following variables:
 
     - export AWS_ACCESS_KEY_ID=XXXX424242XXXX
     - export AWS_SECRET_ACCESS_KEY=YYYYY4242YYYYY
@@ -29,14 +31,35 @@ If you want to connect to ICU for special API call such as ResetAccountPassword 
     - export ICU_LOGIN=ZZZZ424242ZZZZ
     - export ICU_PASSWORD=AAAAA4242AAAAA
 
-
-Setup the region
-------------------
+Then configure the endpoints
     - export FCU_ENDPOINT=fcu.<REGION_NAME>.outscale.com
     - export LBU_ENDPOINT=lbu.<REGION_NAME>.outscale.com
     - export EIM_ENDPOINT=eim.<REGION_NAME>.outscale.com
     - export OSU_ENDPOINT=osu.<REGION_NAME>.outscale.com
     - export ICU_ENDPOINT=icu.<REGION_NAME>.outscale.com
+
+
+File configuratoin
+---------------------
+You can use a .ini file to setup multiple accounts.
+
+To do so create a file like
+::
+	 [first_account]
+	 access_key_id = xxxx
+	 secret_access_key = yyyy
+	 eim_endpoint = eim.eu-west-2.outscale.com
+	 fcu_endpoint = fcu.eu-west-2.outscale.com
+	 lbu_endpoint = lbu.eu-west-2.outscale.com
+	 osu_endpoint = osu.eu-west-2.outscale.com
+
+	 [second_account]
+	 access_key_id = xxxx
+	 secret_access_key = yyyy
+	 eim_endpoint = eim.us-east-2.outscale.com
+	 fcu_endpoint = fcu.us-east-2.outscale.com
+	 osu_endpoint = osu.us-east-2.outscale.com
+
 
 
 How to use it
@@ -71,6 +94,16 @@ Quick start:
    >>>print ocb.eim.get_user()
    >>>print ocb.lbu.get_all_load_balancers()
    >>>print ocb.icu.get_catalog()
+
+
+Quick start with multiple accounts:
+-------------------------------------
+::
+	 >>>ocb = OCBase.OCBase('first_account', ['/home/centos/my_accounts.ini'])
+	 >>>print ocb.fcu.get_only_instances()
+	 >>>ocb.reload('second_account')
+	 >>>print ocb.fcu.get_only_instances()
+
 
 *******
 Helpers
