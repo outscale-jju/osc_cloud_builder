@@ -283,3 +283,10 @@ class OCBase(object):
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         ch.setFormatter(formatter)
         self.__logger.addHandler(ch)
+
+    def reload(self, region, is_secure=True, boto_debug=0, debug_filename='/tmp/ocb.log', debug_level='INFO'):
+        """
+        This will load another region
+        """
+        self.region = region
+        self.__connections_setup(is_secure, boto_debug)
